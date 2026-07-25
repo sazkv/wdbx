@@ -30,6 +30,10 @@ jobs:
           mkdir -p dist/events dist/fighters
           cp dist/index.html dist/events/index.html
           cp dist/index.html dist/fighters/index.html
+          for event in phuket-05 phuket-04 phuket-03 samui-02 samui-01; do
+            mkdir -p "dist/events/$event"
+            cp dist/index.html "dist/events/$event/index.html"
+          done
           cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

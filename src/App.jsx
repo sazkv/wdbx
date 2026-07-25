@@ -1,16 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { copy, events, fighters } from './data';
 import teaserVideo from '../tmp/teaser.MP4';
+import logoImage from '../tmp/logo.jpg';
+import narkotikPhoto from '../tmp/fighters/natkotik.png';
+import brokerPhoto from '../tmp/fighters/BROKER.png';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const localUrl = (path) => `${BASE}${path}`;
 
-const Arrow = ({ down = false }) => <span className={down ? 'arrow down' : 'arrow'}>↗</span>;
+const Arrow = () => <span className="arrow" aria-hidden="true">→</span>;
+
+function LogoMark() {
+  return (
+    <svg className="logo-mark" viewBox="0 0 640 640" aria-hidden="true">
+      <defs>
+        <filter id="logo-luminance" colorInterpolationFilters="sRGB">
+          <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  .2126 .7152 .0722 0 0" />
+        </filter>
+      </defs>
+      <image href={logoImage} width="640" height="640" filter="url(#logo-luminance)" />
+    </svg>
+  );
+}
 
 function Logo() {
   return (
     <a className="logo" href={localUrl('/')} data-link aria-label="Weedboxing home">
-      <span>W</span><b>WEED<br />BOXING</b>
+      <LogoMark /><b>WEED BOXING<br />CLAN</b>
     </a>
   );
 }
@@ -173,9 +189,12 @@ function MagneticButton({ href, children, dark = false }) {
 function Hero({ t }) {
   return (
     <section className="hero">
+      <video className="hero-video" autoPlay loop muted playsInline preload="auto">
+        <source src={teaserVideo} type="video/mp4" />
+      </video>
+      <div className="hero-video-shade" />
       <SmokeCanvas />
       <div className="hero-noise" />
-      <div className="hero-stamp">WXB<small>THAILAND<br />2024—26</small></div>
       <div className="hero-copy">
         <p className="eyebrow reveal">{t.eyebrow}</p>
         <h1>
@@ -183,10 +202,6 @@ function Hero({ t }) {
           <span>{t.heroB}</span>
         </h1>
         <p className="hero-sub">{t.heroText}</p>
-      </div>
-      <div className="hero-bottom">
-        <span>{t.scroll} ↓</span>
-        <div>{t.rounds.map((item, i) => <span key={item}><b>0{i + 1}</b>{item}</span>)}</div>
       </div>
     </section>
   );
@@ -200,64 +215,38 @@ function Manifesto({ t }) {
         <h2>{t.manifesto}</h2>
         <div className="manifesto-copy">
           <p>{t.about}</p>
-          <a className="text-link" href="#film">{t.watch} <Arrow /></a>
         </div>
-      </div>
-      <div className="rule-graphic">
-        <span>03</span><i /><span>×</span><i /><span>03:00</span>
       </div>
     </section>
   );
 }
 
-function Film({ t }) {
+function Format({ t }) {
   return (
-    <section className="film" id="film">
-      <video autoPlay loop muted playsInline preload="metadata">
-        <source src={teaserVideo} type="video/mp4" />
-      </video>
-      <div className="film-overlay" />
-      <div className="teaser-mark"><span>WXB</span><small>{t.teaser}</small></div>
-      <p className="film-caption">KOH SAMUI / PHUKET <b>2024—2026</b></p>
-    </section>
-  );
-}
-
-function NextEvent({ t }) {
-  const event = events[0];
-  return (
-    <section className="next-event section">
-      <div className="section-tag"><i /> {t.next}</div>
-      <div className="event-poster">
-        {event.image ? <img src={event.image} alt={event.title} /> : <SmokeCanvas />}
-        <div className="poster-shade" />
-        <span className="poster-number">#{event.number}</span>
-        <span className="poster-status"><i /> {t.announced}</span>
-        <div className="poster-title">
-          <p>{event.date} · {event.city}</p>
-          <h2>{event.title}</h2>
-          <span>{event.venue}</span>
-        </div>
-        <div className="versus next-card"><span>{t.cardTba}<small>{event.card}</small></span></div>
-        <MagneticButton href={event.link}>{t.ticket}</MagneticButton>
+    <section className="format section">
+      <SmokeCanvas />
+      <div className="section-tag green"><i /> {t.formatTag}</div>
+      <h2>{t.formatTitle}</h2>
+      <div className="format-steps">
+        {['PUFF', 'FIGHT', 'CHILL'].map((step, index) => <article key={step}><span>0{index + 1}</span><h3>{step}</h3><p>{t.formatSteps[index]}</p></article>)}
       </div>
     </section>
   );
 }
 
 function Archive({ t, full = false }) {
-  const shown = full ? events : events.slice(1);
+  const shown = events;
   return (
     <section className={`archive section ${full ? 'archive-full' : ''}`}>
       {!full && <><div className="section-tag"><i /> {t.archive}</div><h2 className="archive-heading">{t.archiveTitle}</h2></>}
       <div className="event-grid">
         {shown.map((event) => (
           <article className={`event-card ${event.status}`} key={event.id}>
-            <div className="event-image">{event.image ? <img src={event.image} alt={`${event.title} ${event.city}`} /> : <><SmokeCanvas /><b className="event-tba">TBA</b></>}<span>#{event.number}</span></div>
-            <div className="event-meta"><span>{event.date}</span><span>{event.city}</span></div>
+            <div className="event-image"><img src={event.image} alt={`${event.title} ${event.city}`} /></div>
+            <div className="event-meta"><span>№{event.number} · {event.date}</span><span>{event.city}</span></div>
             <h3>{event.title}</h3>
             <p>{event.card}</p>
-            <a className="text-link" href={event.link || localUrl(`/events#${event.id}`)} target={event.link ? '_blank' : undefined} rel={event.link ? 'noreferrer' : undefined}>{event.status === 'upcoming' ? t.ticket : t.recap} <Arrow /></a>
+            <a className="text-link" href={localUrl(`/events/${event.id}`)} data-link>{t.recap} <Arrow /></a>
           </article>
         ))}
       </div>
@@ -266,14 +255,16 @@ function Archive({ t, full = false }) {
   );
 }
 
+const fighterPhotos = { 1: narkotikPhoto, 2: brokerPhoto };
+
 function FighterPortrait({ fighter, eager = false }) {
-  const handle = fighter.instagram?.split('/').filter(Boolean).pop();
   const initials = fighter.name.split(' ').slice(0, 2).map((word) => word[0]).join('');
+  const photo = fighterPhotos[fighter.rank];
 
   return (
     <div className="fighter-portrait">
       <span>{initials}</span>
-      {handle && <img src={`https://unavatar.io/instagram/${handle}`} alt={fighter.name} loading={eager ? 'eager' : 'lazy'} onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
+      {photo && <img src={photo} alt={fighter.name} loading={eager ? 'eager' : 'lazy'} />}
     </div>
   );
 }
@@ -291,7 +282,7 @@ function Ranking({ t, full = false }) {
   const isFiltering = full && (query || weight !== 'all');
   const champion = fighters[0];
   const contenders = fighters.slice(1, 3);
-  const topTen = fighters.slice(3, 10);
+  const topTen = full ? fighters.slice(3, 10) : fighters.slice(3, 6);
   const roster = fighters.slice(10);
 
   return (
@@ -301,28 +292,27 @@ function Ranking({ t, full = false }) {
       {full && <div className="filters"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.search} /><select value={weight} onChange={(e) => setWeight(e.target.value)}><option value="all">{t.filter}</option>{['70', '70-75', '75', '76', '80', '85', '90+'].map((value) => <option value={value} key={value}>{value} KG</option>)}</select></div>}
       {isFiltering ? (
         <div className="fighter-search-grid">
-          {filtered.map((fighter) => <article className="rank-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><span className="card-rank">#{String(fighter.rank).padStart(2, '0')}</span><div><p>{fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">↗</a>}</article>)}
+          {filtered.map((fighter) => <article className="rank-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><div><p>№{fighter.rank} · {fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">Instagram</a>}</article>)}
         </div>
       ) : (
         <div className="rank-showcase">
           <article className="champion-card">
             <FighterPortrait fighter={champion} eager />
-            <span className="champion-rank">01</span>
             <div className="champion-badge"><i /> {t.champion}</div>
             <div className="champion-info"><p>{champion.flag} · {champion.country} · {champion.weight} KG</p><h3>{champion.name}</h3><div><FighterRecord fighter={champion} /><span>{champion.fights} {t.fights}</span></div>{champion.instagram && <a href={champion.instagram} target="_blank" rel="noreferrer">{t.viewProfile} <Arrow /></a>}</div>
           </article>
 
           <div className="ranking-tier-title"><span>{t.contenders}</span><i /></div>
           <div className="contender-grid">
-            {contenders.map((fighter) => <article className="contender-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><span className="card-rank">0{fighter.rank}</span><div><p>{fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">↗</a>}</article>)}
+            {contenders.map((fighter) => <article className="contender-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><div><p>№{fighter.rank} · {fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">Instagram</a>}</article>)}
           </div>
 
-          <div className="ranking-tier-title"><span>{t.topRanked}</span><i /></div>
+          <div className="ranking-tier-title"><span>{full ? t.topRanked : t.nextRanked}</span><i /></div>
           <div className="top-grid">
-            {topTen.map((fighter) => <article className="rank-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><span className="card-rank">0{fighter.rank}</span><div><p>{fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">↗</a>}</article>)}
+            {topTen.map((fighter) => <article className="rank-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><div><p>№{fighter.rank} · {fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">Instagram</a>}</article>)}
           </div>
 
-          {full && <><div className="ranking-tier-title roster-title"><span>{t.restRoster}</span><i /></div><div className="rank-table">{roster.map((fighter) => <div className="rank-row" key={fighter.rank}><span className="rank-number">{String(fighter.rank).padStart(2, '0')}</span><span className="fighter-name"><FighterPortrait fighter={fighter} /><b>{fighter.name}</b></span><span className="country"><em>{fighter.flag}</em>{fighter.country}</span><span>{fighter.weight} <small>KG</small></span><FighterRecord fighter={fighter} /><span>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer" aria-label={`${fighter.name} Instagram`}>↗</a>}</span></div>)}</div></>}
+          {full && <><div className="ranking-tier-title roster-title"><span>{t.restRoster}</span><i /></div><div className="rank-table">{roster.map((fighter) => <div className="rank-row" key={fighter.rank}><span className="rank-number">{String(fighter.rank).padStart(2, '0')}</span><span className="fighter-name"><FighterPortrait fighter={fighter} /><b>{fighter.name}</b></span><span className="country"><em>{fighter.flag}</em>{fighter.country}</span><span>{fighter.weight} <small>KG</small></span><FighterRecord fighter={fighter} /><span>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">Instagram</a>}</span></div>)}</div></>}
         </div>
       )}
       {!full && <a href={localUrl('/fighters')} data-link className="outline-link light">{t.allFighters} <Arrow /></a>}
@@ -342,19 +332,13 @@ function Join({ t }) {
   );
 }
 
-const merch = [
-  { name: 'WXB / HEAVY TEE', price: '$45', code: 'TEE' },
-  { name: 'SERIES / HOODIE', price: '$85', code: 'HOOD' },
-  { name: 'WXB / HAND WRAPS', price: '$25', code: 'WRAP' },
-];
-
 function Merch({ t }) {
   return (
     <section className="merch section" id="merch">
       <div className="section-tag"><i /> {t.merchTag}</div>
-      <div className="merch-head"><h2>{t.merchTitle}</h2><span>DROP 001</span></div>
-      <div className="merch-grid">
-        {merch.map((item, index) => <article key={item.name}><div className={`merch-art merch-art-${index + 1}`}><b>{item.code}</b><i>WXB</i><span>0{index + 1}</span></div><h3>{item.name}</h3><p>{item.price} · {t.buy}</p></article>)}
+      <div className="merch-statement">
+        <div><h2>{t.merchTitle}</h2><p>{t.merchText}</p><a href="https://t.me/kurnibratokk" target="_blank" rel="noreferrer" className="text-link">{t.buy} <Arrow /></a></div>
+        <div className="merch-mark"><LogoMark /><span>DROP 001</span><b>WXB</b></div>
       </div>
     </section>
   );
@@ -390,7 +374,7 @@ function Footer({ t }) {
 }
 
 function Home({ t }) {
-  return <main><Hero t={t} /><Marquee /><Manifesto t={t} /><Film t={t} /><NextEvent t={t} /><Archive t={t} /><Ranking t={t} /><Join t={t} /><Merch t={t} /><Investors t={t} /><Partners t={t} /></main>;
+  return <main><Hero t={t} /><Marquee /><Manifesto t={t} /><Format t={t} /><Archive t={t} /><Ranking t={t} /><Join t={t} /><Merch t={t} /><Investors t={t} /><Partners t={t} /></main>;
 }
 
 function PageHero({ title, subtitle, type }) {
@@ -398,7 +382,36 @@ function PageHero({ title, subtitle, type }) {
 }
 
 function EventsPage({ t }) {
-  return <main><PageHero title={t.pageEvents} subtitle={t.pageEventsSub} type="events" /><Marquee text="FIGHT NIGHT · THAILAND · 3 × 3 · " /><Archive t={t} full /><Join t={t} /></main>;
+  return <main><PageHero title={t.pageEvents} subtitle={t.pageEventsSub} type="events" /><Archive t={t} full /><Join t={t} /></main>;
+}
+
+function EventDetail({ event, t }) {
+  if (!event) return <EventsPage t={t} />;
+
+  return (
+    <main className="event-detail">
+      <section className="event-detail-hero">
+        <img src={event.image} alt={`${event.title} ${event.city}`} />
+        <div className="event-detail-shade" />
+        <a href={localUrl('/events')} data-link>{t.eventBack} <Arrow /></a>
+        <div><p>WEEDBOXING №{event.number} · {event.date}</p><h1>{event.title}</h1><span>{event.city} · {event.venue}</span></div>
+      </section>
+      <section className="event-facts section">
+        <div><span>{t.eventAbout}</span><h2>{event.card}</h2></div>
+        <dl><div><dt>DATE</dt><dd>{event.date}</dd></div><div><dt>CITY</dt><dd>{event.city}</dd></div><div><dt>VENUE</dt><dd>{event.venue}</dd></div></dl>
+      </section>
+      <section className="event-card-list section">
+        <div className="section-tag green"><i /> FIGHT CARD</div>
+        <div>{event.fights.map((fight, index) => <article key={fight}><span>{String(index + 1).padStart(2, '0')}</span><h3>{fight}</h3></article>)}</div>
+      </section>
+      <section className="event-gallery section">
+        <div className="section-tag"><i /> {t.eventGallery}</div>
+        <div className="gallery-grid">{event.gallery.map((image, index) => <img src={image} alt={`${event.title}, ${t.eventGallery.toLowerCase()} ${index + 1}`} loading="lazy" key={image} />)}</div>
+        <a className="outline-link" href={event.source} target="_blank" rel="noreferrer">{t.eventSource} <Arrow /></a>
+      </section>
+      <Join t={t} />
+    </main>
+  );
 }
 
 function FightersPage({ t }) {
@@ -410,6 +423,8 @@ export default function App() {
   const getPath = () => window.location.pathname.replace(BASE, '') || '/';
   const [path, setPath] = useState(getPath);
   const t = copy[lang];
+  const eventMatch = path.match(/^\/events\/([^/]+)\/?$/);
+  const activeEvent = eventMatch ? events.find((event) => event.id === eventMatch[1]) : null;
 
   useEffect(() => {
     localStorage.setItem('wxb-lang', lang);
@@ -440,7 +455,7 @@ export default function App() {
     <div id="top" className="app">
       <CursorGlow />
       <Header lang={lang} setLang={setLang} t={t} />
-      {path === '/fighters' ? <FightersPage t={t} /> : path === '/events' ? <EventsPage t={t} /> : <Home t={t} />}
+      {path === '/fighters' ? <FightersPage t={t} /> : path === '/events' ? <EventsPage t={t} /> : eventMatch ? <EventDetail event={activeEvent} t={t} /> : <Home t={t} />}
       <Footer t={t} />
     </div>
   );
