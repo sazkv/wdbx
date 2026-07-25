@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { copy, events, fighters } from './data';
+import teaserVideo from '../tmp/teaser.MP4';
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const localUrl = (path) => `${BASE}${path}`;
@@ -19,61 +20,98 @@ function SmokeCanvas() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const gl = canvas.getContext('webgl', { alpha: true, antialias: false });
+    if (!gl) return undefined;
+
+    const vertexSource = `
+      attribute vec2 position;
+      void main() { gl_Position = vec4(position, 0.0, 1.0); }
+    `;
+    const fragmentSource = `
+      precision highp float;
+      uniform vec2 resolution;
+      uniform float time;
+
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0)), f.x), f.y);
+      }
+      float fbm(vec2 p) {
+        float value = 0.0;
+        float amplitude = 0.52;
+        mat2 rotation = mat2(0.82, -0.57, 0.57, 0.82);
+        for (int i = 0; i < 6; i++) {
+          value += amplitude * noise(p);
+          p = rotation * p * 2.03 + 13.7;
+          amplitude *= 0.5;
+        }
+        return value;
+      }
+      void main() {
+        vec2 p = (2.0 * gl_FragCoord.xy - resolution.xy) / min(resolution.x, resolution.y);
+        p.x += 0.12;
+        float drift = time * 0.055;
+        vec2 flow = vec2(fbm(p * 0.8 + vec2(0.0, -drift)), fbm(p * 0.9 + vec2(4.2, -drift * 0.7)));
+        float cloud = fbm(p * 1.35 + flow * 1.9 + vec2(0.0, -drift * 1.7));
+        float detail = fbm(p * 3.1 - flow + vec2(drift * 0.25, -drift));
+        float body = 1.0 - smoothstep(0.3, 1.75, length(p * vec2(0.72, 0.54)));
+        float smoke = smoothstep(0.42, 0.79, cloud * 0.78 + detail * 0.28 + body * 0.18);
+        vec3 cold = vec3(0.035, 0.04, 0.032);
+        vec3 acid = vec3(0.34, 0.52, 0.12);
+        vec3 color = mix(cold, acid, smoothstep(0.46, 0.9, cloud) * 0.48);
+        gl_FragColor = vec4(color, smoke * body * 0.92);
+      }
+    `;
+
+    const compile = (type, source) => {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      return shader;
+    };
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, vertexSource));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, fragmentSource));
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    const position = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(position);
+    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+    const resolution = gl.getUniformLocation(program, 'resolution');
+    const time = gl.getUniformLocation(program, 'time');
     let animation;
-    let particles = [];
-    let width = 0;
-    let height = 0;
 
     const resize = () => {
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      width = canvas.clientWidth;
-      height = canvas.clientHeight;
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      canvas.width = canvas.clientWidth * ratio;
+      canvas.height = canvas.clientHeight * ratio;
+      gl.viewport(0, 0, canvas.width, canvas.height);
     };
 
-    const makeParticle = (seed = false) => ({
-      x: width * (0.25 + Math.random() * 0.55),
-      y: seed ? Math.random() * height : height + 70,
-      radius: 45 + Math.random() * 130,
-      speed: 0.18 + Math.random() * 0.42,
-      drift: -0.18 + Math.random() * 0.36,
-      alpha: 0.012 + Math.random() * 0.026,
-      life: Math.random() * Math.PI * 2,
-      green: Math.random() > 0.54,
-    });
-
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-      if (particles.length < 24) particles.push(makeParticle());
-      particles.forEach((p) => {
-        p.y -= p.speed;
-        p.x += p.drift + Math.sin(p.life) * 0.1;
-        p.life += 0.006;
-        p.radius += 0.08;
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-        const color = p.green ? '176, 255, 58' : '235, 238, 227';
-        gradient.addColorStop(0, `rgba(${color}, ${p.alpha})`);
-        gradient.addColorStop(0.45, `rgba(${color}, ${p.alpha * 0.5})`);
-        gradient.addColorStop(1, `rgba(${color}, 0)`);
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      particles = particles.filter((p) => p.y + p.radius > -100);
-      animation = requestAnimationFrame(draw);
+    const draw = (now = 0) => {
+      gl.uniform2f(resolution, canvas.width, canvas.height);
+      gl.uniform1f(time, now * 0.001);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) animation = requestAnimationFrame(draw);
     };
 
     resize();
-    particles = Array.from({ length: 20 }, () => makeParticle(true));
     window.addEventListener('resize', resize);
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) draw();
+    draw();
     return () => {
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(animation);
+      gl.deleteProgram(program);
+      gl.deleteBuffer(buffer);
     };
   }, []);
 
@@ -119,7 +157,7 @@ function Header({ lang, setLang, t }) {
   );
 }
 
-function Marquee({ text = 'WEEDBOXING · HIGH COMBAT · THAILAND · NO BAD TRIPS · ' }) {
+function Marquee({ text = 'WEEDBOXING · INDEPENDENT FIGHT SERIES · THAILAND · 3 × 3 · ' }) {
   return <div className="marquee"><div>{text.repeat(4)}</div></div>;
 }
 
@@ -137,12 +175,12 @@ function Hero({ t }) {
     <section className="hero">
       <SmokeCanvas />
       <div className="hero-noise" />
-      <div className="hero-stamp">18+<small>HIGH<br />COMBAT</small></div>
+      <div className="hero-stamp">WXB<small>THAILAND<br />2024—26</small></div>
       <div className="hero-copy">
         <p className="eyebrow reveal">{t.eyebrow}</p>
         <h1>
-          <span>{t.heroA} <i>{t.heroB}</i></span>
-          <span>{t.heroC} <i>{t.heroD}</i></span>
+          <span>{t.heroA}</span>
+          <span>{t.heroB}</span>
         </h1>
         <p className="hero-sub">{t.heroText}</p>
       </div>
@@ -175,12 +213,12 @@ function Manifesto({ t }) {
 function Film({ t }) {
   return (
     <section className="film" id="film">
-      <video autoPlay loop muted playsInline poster="https://images.unsplash.com/photo-1522079302289-2f04f43e15b3?auto=format&fit=crop&w=1800&q=85">
-        <source src={localUrl('/media/weedboxing-showreel.mp4')} type="video/mp4" />
+      <video autoPlay loop muted playsInline preload="metadata">
+        <source src={teaserVideo} type="video/mp4" />
       </video>
       <div className="film-overlay" />
-      <button className="play" aria-label={t.watch}><span>▶</span><small>{t.watch}</small></button>
-      <p className="film-caption">BANGKOK / PHUKET / PATTAYA <b>RAW FOOTAGE №08</b></p>
+      <div className="teaser-mark"><span>WXB</span><small>{t.teaser}</small></div>
+      <p className="film-caption">KOH SAMUI / PHUKET <b>2024—2026</b></p>
     </section>
   );
 }
@@ -191,7 +229,7 @@ function NextEvent({ t }) {
     <section className="next-event section">
       <div className="section-tag"><i /> {t.next}</div>
       <div className="event-poster">
-        <img src={event.image} alt="Boxing fight under dramatic lights" />
+        {event.image ? <img src={event.image} alt={event.title} /> : <SmokeCanvas />}
         <div className="poster-shade" />
         <span className="poster-number">#{event.number}</span>
         <span className="poster-status"><i /> {t.announced}</span>
@@ -200,8 +238,8 @@ function NextEvent({ t }) {
           <h2>{event.title}</h2>
           <span>{event.venue}</span>
         </div>
-        <div className="versus"><span>NARKOTIK<small>RUS · 70 KG</small></span><b>VS</b><span>BRONSON<small>UKR · 90+ KG</small></span></div>
-        <MagneticButton href="#tickets">{t.ticket}</MagneticButton>
+        <div className="versus next-card"><span>{t.cardTba}<small>{event.card}</small></span></div>
+        <MagneticButton href={event.link}>{t.ticket}</MagneticButton>
       </div>
     </section>
   );
@@ -215,11 +253,11 @@ function Archive({ t, full = false }) {
       <div className="event-grid">
         {shown.map((event) => (
           <article className={`event-card ${event.status}`} key={event.id}>
-            <div className="event-image"><img src={event.image} alt={`${event.title} ${event.city}`} /><span>#{event.number}</span></div>
+            <div className="event-image">{event.image ? <img src={event.image} alt={`${event.title} ${event.city}`} /> : <><SmokeCanvas /><b className="event-tba">TBA</b></>}<span>#{event.number}</span></div>
             <div className="event-meta"><span>{event.date}</span><span>{event.city}</span></div>
             <h3>{event.title}</h3>
             <p>{event.card}</p>
-            <a className="text-link" href={localUrl(`/events#${event.id}`)}>{event.status === 'upcoming' ? t.ticket : t.recap} <Arrow /></a>
+            <a className="text-link" href={event.link || localUrl(`/events#${event.id}`)} target={event.link ? '_blank' : undefined} rel={event.link ? 'noreferrer' : undefined}>{event.status === 'upcoming' ? t.ticket : t.recap} <Arrow /></a>
           </article>
         ))}
       </div>
@@ -295,20 +333,19 @@ function Ranking({ t, full = false }) {
 function Join({ t }) {
   return (
     <section className="join" id="join">
-      <div className="join-glove">🥊</div>
+      <div className="join-ring"><i /><i /><i /></div>
       <div className="section-tag"><i /> {t.joinTag}</div>
       <h2>{t.joinTitle}</h2>
       <p>{t.joinText}</p>
       <MagneticButton href="mailto:fight@weedboxing.com" dark>{t.joinButton}</MagneticButton>
-      <span className="scribble">YOU?</span>
     </section>
   );
 }
 
 const merch = [
-  { name: 'SMOKE FIRST / HEAVY TEE', price: '$45', image: 'https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=85' },
-  { name: 'HIGH COMBAT / HOODIE', price: '$85', image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=85' },
-  { name: 'WXB / HAND WRAPS', price: '$25', image: 'https://images.unsplash.com/photo-1517438322307-e67111335449?auto=format&fit=crop&w=900&q=85' },
+  { name: 'WXB / HEAVY TEE', price: '$45', code: 'TEE' },
+  { name: 'SERIES / HOODIE', price: '$85', code: 'HOOD' },
+  { name: 'WXB / HAND WRAPS', price: '$25', code: 'WRAP' },
 ];
 
 function Merch({ t }) {
@@ -317,7 +354,7 @@ function Merch({ t }) {
       <div className="section-tag"><i /> {t.merchTag}</div>
       <div className="merch-head"><h2>{t.merchTitle}</h2><span>DROP 001</span></div>
       <div className="merch-grid">
-        {merch.map((item, index) => <article key={item.name}><div><img src={item.image} alt={item.name} /><span>0{index + 1}</span></div><h3>{item.name}</h3><p>{item.price} · {t.buy}</p></article>)}
+        {merch.map((item, index) => <article key={item.name}><div className={`merch-art merch-art-${index + 1}`}><b>{item.code}</b><i>WXB</i><span>0{index + 1}</span></div><h3>{item.name}</h3><p>{item.price} · {t.buy}</p></article>)}
       </div>
     </section>
   );
@@ -338,16 +375,16 @@ function Investors({ t }) {
 }
 
 function Partners({ t }) {
-  return <section className="partners section"><div className="section-tag"><i /> {t.partners}</div><div><b>RAWAI <small>BOXING CLUB</small></b><b>HIGH<br />SEASON</b><b>MUAY <span>LAB</span></b><b>GREEN<br />ROOM</b><b>THAI<br />HUSTLE</b></div></section>;
+  return <section className="partners section"><div className="section-tag"><i /> {t.partners}</div><div><b>VENUES</b><b>MEDIA</b><b>FIGHT<br />GYMS</b><b>BRANDS</b><b>PRODUCTION</b></div></section>;
 }
 
 function Footer({ t }) {
   return (
     <footer>
       <div className="footer-top"><Logo /><h2>{t.footer}</h2><a href="#top">↑ TOP</a></div>
-      <div className="footer-links"><div><a href={localUrl('/#about')} data-link>{t.nav[0]}</a><a href={localUrl('/events')} data-link>{t.nav[1]}</a><a href={localUrl('/fighters')} data-link>{t.nav[2]}</a><a href={localUrl('/#merch')} data-link>{t.nav[3]}</a></div><div><a href="https://instagram.com" target="_blank" rel="noreferrer">INSTAGRAM ↗</a><a href="https://youtube.com" target="_blank" rel="noreferrer">YOUTUBE ↗</a><a href="https://t.me" target="_blank" rel="noreferrer">TELEGRAM ↗</a></div></div>
+      <div className="footer-links"><div><a href={localUrl('/#about')} data-link>{t.nav[0]}</a><a href={localUrl('/events')} data-link>{t.nav[1]}</a><a href={localUrl('/fighters')} data-link>{t.nav[2]}</a><a href={localUrl('/#merch')} data-link>{t.nav[3]}</a></div><div><a href="https://www.instagram.com/weekend_boxing" target="_blank" rel="noreferrer">INSTAGRAM ↗</a><a href="https://youtu.be/_ZRCpDyn8rI" target="_blank" rel="noreferrer">YOUTUBE ↗</a><a href="https://t.me/kurnibratokk" target="_blank" rel="noreferrer">TELEGRAM ↗</a></div></div>
       <div className="footer-word">WEEDBOXING</div>
-      <div className="footer-bottom"><span>{t.rights}</span><span>THAILAND · 18+</span></div>
+      <div className="footer-bottom"><span>{t.rights}</span><span>THAILAND · EST. 2024</span></div>
     </footer>
   );
 }
