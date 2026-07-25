@@ -199,6 +199,57 @@ footer { padding: 75px max(5vw, 30px) 25px; background: #050505; }
 .filters input, .filters select { color: var(--white); background: #1a1b18; border: 1px solid var(--line); border-radius: 0; padding: 18px 20px; outline: none; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
 .filters input:focus, .filters select:focus { border-color: var(--acid); }
 
+/* The ranking changes scale at every tier so it reads like a fight card, not a spreadsheet. */
+.rank-showcase { margin-top: 10px; }
+.fighter-portrait { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 30%, #3a3e33, #1c1e19 55%, #0d0e0c); }
+.fighter-portrait::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(5,5,5,.7), transparent 50%); pointer-events: none; }
+.fighter-portrait > span { position: absolute; inset: 0; display: grid; place-content: center; color: rgba(183,255,60,.17); font: 120px var(--display); letter-spacing: -.04em; }
+.fighter-portrait img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.15); transition: transform .7s, filter .5s; }
+article:hover > .fighter-portrait img { transform: scale(1.035); filter: grayscale(.25) contrast(1.1); }
+.fighter-record { display: flex; align-items: baseline; gap: 5px; color: #777a71; font: 16px var(--display); }
+.fighter-record b { color: var(--acid); font-size: 28px; font-weight: 400; }
+.fighter-record i { color: var(--white); font-style: normal; }
+.champion-card { position: relative; height: min(67vw, 760px); min-height: 620px; overflow: hidden; border: 1px solid rgba(183,255,60,.3); background: radial-gradient(circle at 70% 35%, #272d20, #11120f 48%); }
+.champion-card::after { content: 'CHAMPION'; position: absolute; left: 4vw; bottom: -3vw; color: rgba(255,255,255,.025); font: min(18vw, 270px)/.8 var(--display); pointer-events: none; }
+.champion-card > .fighter-portrait { position: absolute; top: 0; right: 0; width: 61%; height: 100%; background: transparent; mask-image: linear-gradient(90deg, transparent 0, black 26%); }
+.champion-card > .fighter-portrait::after { background: linear-gradient(90deg, #11120f 0, transparent 40%), linear-gradient(0deg, #11120f 0, transparent 35%); }
+.champion-card > .fighter-portrait > span { font-size: min(25vw, 380px); }
+.champion-rank { position: absolute; right: 3vw; top: -.05em; z-index: 2; color: var(--acid); font: min(24vw, 360px)/1 var(--display); text-shadow: 7px 7px 0 rgba(0,0,0,.3); }
+.champion-badge { position: absolute; z-index: 3; left: 4vw; top: 4vw; display: flex; align-items: center; gap: 10px; color: var(--acid); font-size: 9px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; }
+.champion-badge i { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--acid); box-shadow: 0 0 15px var(--acid); }
+.champion-info { position: absolute; z-index: 3; left: 4vw; bottom: 4vw; max-width: 58%; }
+.champion-info > p, .contender-card p, .rank-card p { color: #8c8f85; margin: 0 0 10px; font-size: 9px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.champion-info h3 { max-width: 800px; margin: 0 0 22px; font: clamp(75px, 9.4vw, 150px)/.78 var(--display); letter-spacing: -.02em; }
+.champion-info > div { display: flex; align-items: center; gap: 28px; }
+.champion-info > div > span:last-child { color: #a3a69c; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.champion-info > a { display: inline-flex; gap: 35px; margin-top: 24px; padding-bottom: 8px; border-bottom: 1px solid #5a5d54; color: #bfc1b8; font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.ranking-tier-title { display: flex; align-items: center; gap: 24px; margin: 65px 0 25px; color: #9a9d93; font-size: 10px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+.ranking-tier-title i { height: 1px; flex: 1; background: var(--line); }
+.contender-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.contender-card { height: 540px; position: relative; overflow: hidden; background: #181a16; }
+.contender-card > .fighter-portrait { width: 100%; height: 100%; }
+.contender-card > .fighter-portrait::after { background: linear-gradient(0deg, rgba(5,5,5,.96), transparent 60%); }
+.contender-card > .fighter-portrait > span { font-size: 220px; }
+.contender-card > .card-rank, .rank-card > .card-rank { position: absolute; z-index: 3; right: 20px; top: 8px; color: var(--acid); font: 80px var(--display); }
+.contender-card > div:nth-of-type(2) { position: absolute; z-index: 3; left: 28px; bottom: 28px; }
+.contender-card h3 { max-width: 75%; margin: 0 0 10px; font: 54px/.85 var(--display); }
+.contender-card > a, .rank-card > a { position: absolute; z-index: 4; right: 24px; bottom: 24px; display: grid; place-content: center; width: 38px; height: 38px; border: 1px solid rgba(255,255,255,.28); border-radius: 50%; }
+.top-grid, .fighter-search-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.rank-card { position: relative; min-width: 0; background: #191a17; padding-bottom: 22px; overflow: hidden; }
+.rank-card > .fighter-portrait { height: 310px; }
+.rank-card > .fighter-portrait > span { font-size: 100px; }
+.rank-card > .card-rank { top: 4px; right: 12px; font-size: 52px; }
+.rank-card > div:nth-of-type(2) { padding: 18px 18px 0; }
+.rank-card h3 { min-height: 2em; max-width: 80%; margin: 0 0 12px; font: 29px/.9 var(--display); }
+.rank-card > a { right: 15px; bottom: 15px; width: 30px; height: 30px; font-size: 10px; }
+.fighter-search-grid { margin-top: 35px; }
+.roster-title { margin-top: 90px; }
+.fighter-name .fighter-portrait { flex: 0 0 48px; width: 48px; height: 58px; }
+.fighter-name .fighter-portrait > span { font-size: 20px; }
+.fighter-name .fighter-portrait::after { display: none; }
+.rank-row > .fighter-record { font-size: 16px; }
+.rank-row > .fighter-record b { font-size: 22px; }
+
 @keyframes marquee { to { transform: translateX(-25%); } }
 @keyframes pulse { 50% { opacity: .25; transform: scale(.75); } }
 @keyframes orbit { to { transform: rotate(360deg); } }
@@ -254,6 +305,16 @@ footer { padding: 75px max(5vw, 30px) 25px; background: #050505; }
   .page-hero h1 { font-size: 21vw; }
   .archive-full .event-grid .event-card:first-child .event-image { height: 430px; }
   .filters { grid-template-columns: 1fr; }
+  .champion-card { height: 720px; }
+  .champion-card > .fighter-portrait { width: 100%; height: 68%; mask-image: linear-gradient(0deg, transparent 0, black 30%); }
+  .champion-card > .fighter-portrait::after { background: linear-gradient(0deg, #11120f 0, transparent 45%); }
+  .champion-rank { font-size: 33vw; }
+  .champion-info { left: 25px; right: 25px; bottom: 28px; max-width: none; }
+  .champion-info h3 { font-size: 15vw; }
+  .champion-badge { left: 25px; top: 25px; }
+  .contender-card { height: 440px; }
+  .top-grid, .fighter-search-grid { grid-template-columns: repeat(2, 1fr); }
+  .rank-card > .fighter-portrait { height: 280px; }
 }
 
 @media (max-width: 520px) {
@@ -276,6 +337,16 @@ footer { padding: 75px max(5vw, 30px) 25px; background: #050505; }
   .versus { gap: 8px; font-size: 21px; }
   .event-image, .archive-full .event-grid .event-card:first-child .event-image { height: 320px; }
   .ranking h2 { font-size: 18vw; }
+  .champion-card { min-height: 650px; height: 650px; }
+  .champion-card > .fighter-portrait { height: 61%; }
+  .champion-info h3 { font-size: 17vw; }
+  .contender-grid { grid-template-columns: 1fr; }
+  .contender-card { height: 430px; }
+  .top-grid, .fighter-search-grid { gap: 8px; }
+  .rank-card > .fighter-portrait { height: 210px; }
+  .rank-card > div:nth-of-type(2) { padding: 13px 12px 0; }
+  .rank-card h3 { font-size: 23px; }
+  .rank-card > .card-rank { font-size: 42px; }
   .rank-row { grid-template-columns: 31px 1.45fr .5fr .85fr; gap: 7px; }
   .rank-number { font-size: 20px; }
   .rank-row > span:nth-child(4), .record { font-size: 14px; }

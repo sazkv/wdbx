@@ -228,31 +228,65 @@ function Archive({ t, full = false }) {
   );
 }
 
+function FighterPortrait({ fighter, eager = false }) {
+  const handle = fighter.instagram?.split('/').filter(Boolean).pop();
+  const initials = fighter.name.split(' ').slice(0, 2).map((word) => word[0]).join('');
+
+  return (
+    <div className="fighter-portrait">
+      <span>{initials}</span>
+      {handle && <img src={`https://unavatar.io/instagram/${handle}`} alt={fighter.name} loading={eager ? 'eager' : 'lazy'} onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
+    </div>
+  );
+}
+
+function FighterRecord({ fighter }) {
+  return <span className="fighter-record"><b>{fighter.wins}</b>W <i>{fighter.draws}</i>D <i>{fighter.losses}</i>L</span>;
+}
+
 function Ranking({ t, full = false }) {
   const [query, setQuery] = useState('');
   const [weight, setWeight] = useState('all');
-  const visible = (full ? fighters : fighters.slice(0, 6)).filter((fighter) => {
+  const filtered = fighters.filter((fighter) => {
     return fighter.name.toLowerCase().includes(query.toLowerCase()) && (weight === 'all' || fighter.weight === weight);
   });
+  const isFiltering = full && (query || weight !== 'all');
+  const champion = fighters[0];
+  const contenders = fighters.slice(1, 3);
+  const topTen = fighters.slice(3, 10);
+  const roster = fighters.slice(10);
 
   return (
     <section className={`ranking section ${full ? 'ranking-full' : ''}`}>
       {!full && <div className="section-tag green"><i /> {t.rankTag}</div>}
       {!full && <div className="ranking-head"><h2>{t.rankTitle}</h2><p>{t.rankSub}</p></div>}
       {full && <div className="filters"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t.search} /><select value={weight} onChange={(e) => setWeight(e.target.value)}><option value="all">{t.filter}</option>{['70', '70-75', '75', '76', '80', '85', '90+'].map((value) => <option value={value} key={value}>{value} KG</option>)}</select></div>}
-      <div className="rank-table">
-        <div className="rank-row rank-labels"><span>#</span><span>{t.fighter}</span><span>{t.country}</span><span>{t.weight}</span><span>{t.record}</span><span /></div>
-        {visible.map((fighter) => (
-          <div className="rank-row" key={fighter.rank}>
-            <span className="rank-number">{String(fighter.rank).padStart(2, '0')}</span>
-            <span className="fighter-name"><i>{fighter.name.charAt(0)}</i><b>{fighter.name}</b></span>
-            <span className="country"><em>{fighter.flag}</em>{fighter.country}</span>
-            <span>{fighter.weight} <small>KG</small></span>
-            <span className="record"><b>{fighter.wins}</b>W · {fighter.draws}D · {fighter.losses}L</span>
-            <span>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer" aria-label={`${fighter.name} Instagram`}>↗</a>}</span>
+      {isFiltering ? (
+        <div className="fighter-search-grid">
+          {filtered.map((fighter) => <article className="rank-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><span className="card-rank">#{String(fighter.rank).padStart(2, '0')}</span><div><p>{fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">↗</a>}</article>)}
+        </div>
+      ) : (
+        <div className="rank-showcase">
+          <article className="champion-card">
+            <FighterPortrait fighter={champion} eager />
+            <span className="champion-rank">01</span>
+            <div className="champion-badge"><i /> {t.champion}</div>
+            <div className="champion-info"><p>{champion.flag} · {champion.country} · {champion.weight} KG</p><h3>{champion.name}</h3><div><FighterRecord fighter={champion} /><span>{champion.fights} {t.fights}</span></div>{champion.instagram && <a href={champion.instagram} target="_blank" rel="noreferrer">{t.viewProfile} <Arrow /></a>}</div>
+          </article>
+
+          <div className="ranking-tier-title"><span>{t.contenders}</span><i /></div>
+          <div className="contender-grid">
+            {contenders.map((fighter) => <article className="contender-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><span className="card-rank">0{fighter.rank}</span><div><p>{fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">↗</a>}</article>)}
           </div>
-        ))}
-      </div>
+
+          <div className="ranking-tier-title"><span>{t.topRanked}</span><i /></div>
+          <div className="top-grid">
+            {topTen.map((fighter) => <article className="rank-card" key={fighter.rank}><FighterPortrait fighter={fighter} /><span className="card-rank">0{fighter.rank}</span><div><p>{fighter.flag} · {fighter.weight} KG</p><h3>{fighter.name}</h3><FighterRecord fighter={fighter} /></div>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer">↗</a>}</article>)}
+          </div>
+
+          {full && <><div className="ranking-tier-title roster-title"><span>{t.restRoster}</span><i /></div><div className="rank-table">{roster.map((fighter) => <div className="rank-row" key={fighter.rank}><span className="rank-number">{String(fighter.rank).padStart(2, '0')}</span><span className="fighter-name"><FighterPortrait fighter={fighter} /><b>{fighter.name}</b></span><span className="country"><em>{fighter.flag}</em>{fighter.country}</span><span>{fighter.weight} <small>KG</small></span><FighterRecord fighter={fighter} /><span>{fighter.instagram && <a href={fighter.instagram} target="_blank" rel="noreferrer" aria-label={`${fighter.name} Instagram`}>↗</a>}</span></div>)}</div></>}
+        </div>
+      )}
       {!full && <a href={localUrl('/fighters')} data-link className="outline-link light">{t.allFighters} <Arrow /></a>}
     </section>
   );
