@@ -188,21 +188,13 @@ function MagneticButton({ href, children, dark = false }) {
 
 function Hero({ t }) {
   return (
-    <section className="hero">
+    <section className="hero" aria-label={t.eyebrow}>
       <video className="hero-video" autoPlay loop muted playsInline preload="auto">
         <source src={teaserVideo} type="video/mp4" />
       </video>
       <div className="hero-video-shade" />
       <SmokeCanvas />
       <div className="hero-noise" />
-      <div className="hero-copy">
-        <p className="eyebrow reveal">{t.eyebrow}</p>
-        <h1>
-          <span>{t.heroA}</span>
-          <span>{t.heroB}</span>
-        </h1>
-        <p className="hero-sub">{t.heroText}</p>
-      </div>
     </section>
   );
 }
